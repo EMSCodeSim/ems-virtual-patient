@@ -1,3 +1,10 @@
+More code
+David Gallaher<davidagallaher@hotmail.com>
+
+
+​
+Gallaher, Dave
+​
 exports.handler = async function(event, context) {
   try {
     const body = JSON.parse(event.body);
@@ -33,6 +40,9 @@ exports.handler = async function(event, context) {
     });
 
     const data = await response.json();
+
+    // Add this to log the full API response
+    console.log("OpenAI API response:", JSON.stringify(data));
 
     if (!data.choices || !data.choices[0]) {
       throw new Error("Unexpected response from OpenAI");
