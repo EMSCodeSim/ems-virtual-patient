@@ -1,4 +1,30 @@
 exports.handler = async function(event, context) {
+
+  try {
+
+    const body = JSON.parse(event.body);
+
+    const userMessage = body.message;
+
+
+
+    const apiKey = process.env.OPENAI_API_KEY;
+
+
+
+    if (!apiKey) {
+
+      console.error("❌ OPENAI_API_KEY is undefined!");
+
+      throw new Error("Missing OpenAI API key");
+
+    }
+
+
+
+    // ... rest of your code
+
+exports.handler = async function(event, context) {
   const body = JSON.parse(event.body);
   const userMessage = body.message;
 
