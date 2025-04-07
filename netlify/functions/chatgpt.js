@@ -11,7 +11,6 @@ exports.handler = async function(event, context) {
     const apiKey = process.env.OPENAI_API_KEY;
 
 
-
     if (!apiKey) {
 
       console.error("❌ OPENAI_API_KEY is undefined!");
