@@ -2,13 +2,29 @@ const chatBox = document.getElementById('chat-box');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('user-input');
 
-// Basic response logic — customize this!
-const responses = {
-  "what's your name": "My name is John. I think I hurt my chest.",
-  "where does it hurt": "My chest really hurts, especially when I breathe.",
-  "how old are you": "I'm 57 years old.",
-  "are you allergic to anything": "Yes, I'm allergic to penicillin.",
-  "do you take any medications": "Yes, I take lisinopril for high blood pressure."
+async function getAIResponse(message) {
+  const response = await fetch("/.netlify/functions/chatgpt", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ message })
+  });
+  const data = await response.json();
+  return data.reply;
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const question = input.value.trim();
+  if (question === "") return;
+
+  addMessage('user', question);
+  input.value = '';
+
+  const reply = await getAIResponse(question);
+  addMessage('bot', reply);
+});
 };
 
 function addMessage(sender, message) {
