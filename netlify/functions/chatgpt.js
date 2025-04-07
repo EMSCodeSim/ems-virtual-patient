@@ -1,4 +1,3 @@
-fetch()
 exports.handler = async function(event, context) {
   const body = JSON.parse(event.body);
   const userMessage = body.message;
