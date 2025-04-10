@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-exports.handler = async function(event, context) {
+exports.handler = async function(event) {
   const { message } = JSON.parse(event.body);
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -16,7 +16,7 @@ exports.handler = async function(event, context) {
   });
 
   const data = await response.json();
-  const reply = data.choices?.[0]?.message?.content || 'Sorry, no reply received.';
+  const reply = data.choices?.[0]?.message?.content || 'No reply.';
 
   return {
     statusCode: 200,
