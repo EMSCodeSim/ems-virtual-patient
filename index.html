@@ -1,22 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EMS Patient Simulator</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatbot Interface</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      padding: 10px;
+      background-color: #1e1e1e;
+      color: white;
+      text-align: center;
+    }
+
+    header img {
+      height: 50px;
+    }
+
+    #chat-display {
+      flex: 1;
+      padding: 20px;
+      background-color: #f5f5f5;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-message {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-width: 70%;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #chat-input {
+      display: flex;
+      padding: 10px;
+      background-color: #ddd;
+    }
+
+    #chat-input input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #chat-input button {
+      margin-left: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: I would like to start a new site with the information below 
+
+Make it a simple page with a logo at the top 
+
+Large chat box that displays chatbot information that can be updated to display photos at a later time 
+
+Smaller chatbot at bottom to allow user to input text 5px;
+      cursor: pointer;
+    }
+
+    #chat-input button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-  <div class="simulator">
-    <img src="ems-logo.png" alt="EMS Code Sim Logo" class="logo">
-    <h1>NREMT Medical Patient Simulator</h1>
-    <div id="dispatch-info">Treat the patient.</div>
-    <div id="chat-box"></div>
-    <form id="chat-form">
-      <input type="text" id="user-input" placeholder="Type your action or question..." autocomplete="off" required>
-      <button type="submit">Send</button>
-    </form>
+  <header>
+    <img src="logo.png" alt="Logo" />
+  </header>
+
+  <div id="chat-display">
+    <div class="chat-message">Welcome! How can I help you today?</div>
   </div>
-  <script src="script.js"></script>
-</body>
-</html>
+
