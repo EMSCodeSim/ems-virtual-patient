@@ -173,24 +173,13 @@
         });
 
         const data = await response.json();
-        const botReply = data.reply;
+        const botReply = data?.reply || '⚠️ No response received from patient.';
 
-        const typingMsg = document.createElement('div');
-        typingMsg.className = 'chat-message';
-        typingMsg.textContent = '...';
-        chat.appendChild(typingMsg);
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-message';
+        botMsg.textContent = botReply;
+        chat.appendChild(botMsg);
         chat.scrollTop = chat.scrollHeight;
-
-        setTimeout(() => {
-          typingMsg.textContent = botReply;
-
-          const utterance = new SpeechSynthesisUtterance(botReply);
-          utterance.rate = 1;
-          utterance.pitch = 1;
-          speechSynthesis.speak(utterance);
-
-          chat.scrollTop = chat.scrollHeight;
-        }, 1000);
       } catch {
         const errMsg = document.createElement('div');
         errMsg.className = 'chat-message';
