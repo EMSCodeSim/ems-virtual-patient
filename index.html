@@ -5,56 +5,157 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EMS Virtual Patient</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-    header { background-color: #1e1e1e; color: white; padding: 10px; text-align: center; }
-    #chat-display { flex: 1; padding: 10px; background: #f0f0f0; overflow-y: auto; }
-    .chat-message { background: white; margin: 5px 0; padding: 10px; border-radius: 8px; max-width: 80%; }
-    #chat-input { background: #ddd; padding: 10px; }
-    #chat-input textarea { width: 100%; height: 60px; font-size: 16px; border-radius: 5px; border: none; padding: 10px; resize: none; }
-    #controls { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
-    #controls button { flex: 1; padding: 12px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
-    #send-button { background-color: #4CAF50; color: white; }
-    #mic-button { background-color: #2196F3; color: white; }
-    #end-button { background-color: #f44336; color: white; }
-    #start-button { background-color: #007bff; color: white; }
-    #timer { padding: 10px; background: #eee; text-align: center; font-size: 18px; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100%;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 10px;
+      background-color: #1e1e1e;
+      color: white;
+      text-align: center;
+    }
+    header img {
+      height: 50px;
+    }
+    #chat-display {
+      flex: 1;
+      padding: 10px;
+      background-color: #f5f5f5;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-message {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-width: 90%;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    #chat-input {
+      padding: 10px;
+      background-color: #ddd;
+    }
+    #input-row {
+      display: flex;
+    }
+    #user-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      resize: none;
+      height: 60px;
+    }
+    #send-button {
+      margin-left: 10px;
+      padding: 14px 24px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #send-button:hover {
+      background-color: #45a049;
+    }
+    #button-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    #mic-button, #end-button {
+      font-size: 18px;
+      padding: 16px 20px;
+      width: 48%;
+      height: 60px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #mic-button {
+      background-color: #2196F3;
+    }
+    #mic-button:hover {
+      background-color: #1976D2;
+    }
+    #end-button {
+      background-color: #f44336;
+    }
+    #end-button:hover {
+      background-color: #d32f2f;
+    }
+    #start-button {
+      padding: 20px 40px;
+      font-size: 24px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      #input-row {
+        flex-direction: column;
+      }
+      #send-button, #mic-button, #end-button {
+        width: 100%;
+      }
+      #button-row {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <img src="logo.png" alt="Logo" style="height: 50px;" />
+    <img src="logo.png" alt="Logo" />
   </header>
 
   <div style="text-align: center; padding: 10px;">
-    <button id="start-button" onclick="startRandomScenario()">🚑 Start Random Simulation</button>
+    <button id="start-button" onclick="startRandomScenario()">🚑 Start Simulation</button>
   </div>
 
   <div id="chat-display"></div>
 
   <div id="chat-input">
-    <textarea id="user-input" placeholder="Type your message..."></textarea>
-    <div id="controls">
+    <div id="input-row">
+      <textarea id="user-input" placeholder="Type your message here..."></textarea>
       <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+    <div id="button-row">
       <button id="mic-button" onclick="startVoiceInput()">🎤 Speak</button>
       <button id="end-button" onclick="endScenario()">End Scenario</button>
     </div>
   </div>
 
-  <div id="timer">Time Remaining: 15:00</div>
-
   <script>
     let totalTime = 15 * 60;
     let countdown;
+    let scenarioActive = false;
 
     function startTimer() {
-      const timer = document.getElementById('timer');
+      const timer = document.getElementById('start-button');
+      scenarioActive = true;
       countdown = setInterval(() => {
         const mins = Math.floor(totalTime / 60);
         const secs = totalTime % 60;
-        timer.textContent = 'Time Remaining: ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        timer.textContent = '🕒 ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
         if (totalTime <= 0) {
           clearInterval(countdown);
-          timer.textContent = 'Time is up!';
+          timer.textContent = '⏰ Time is up!';
+          scenarioActive = false;
         }
         totalTime--;
       }, 1000);
@@ -62,37 +163,54 @@
 
     function stopTimer() {
       clearInterval(countdown);
-      document.getElementById('timer').textContent += ' (Scenario Ended)';
+      document.getElementById('start-button').textContent = '⏹ Scenario Ended';
+      scenarioActive = false;
     }
 
-    function sendMessage() {
+    async function sendMessage(messageOverride = null) {
       const input = document.getElementById('user-input');
-      const message = input.value.trim();
+      const message = messageOverride || input.value.trim();
       if (!message) return;
+
       const chat = document.getElementById('chat-display');
       const userMsg = document.createElement('div');
       userMsg.className = 'chat-message';
       userMsg.textContent = message;
       chat.appendChild(userMsg);
       chat.scrollTop = chat.scrollHeight;
+
+      if (scenarioActive && /transport(ed)? by ambulance/i.test(message)) {
+        stopTimer();
+      }
+
       input.value = '';
 
-      fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      }).then(res => res.json()).then(data => {
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await response.json();
+        const botReply = data.reply;
+
+        // Read it aloud
+        const utterance = new SpeechSynthesisUtterance(botReply);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        speechSynthesis.speak(utterance);
+
         const botMsg = document.createElement('div');
         botMsg.className = 'chat-message';
-        botMsg.textContent = data.reply;
+        botMsg.textContent = botReply;
         chat.appendChild(botMsg);
         chat.scrollTop = chat.scrollHeight;
-      }).catch(() => {
+      } catch {
         const errMsg = document.createElement('div');
         errMsg.className = 'chat-message';
         errMsg.textContent = 'Error communicating with AI.';
         chat.appendChild(errMsg);
-      });
+      }
     }
 
     function endScenario() {
@@ -105,7 +223,21 @@
     }
 
     function startVoiceInput() {
-      alert("Voice input coming soon!");
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function(event) {
+        const speechResult = event.results[0][0].transcript;
+        sendMessage(speechResult);
+      };
+
+      recognition.onerror = function(event) {
+        alert('Mic error: ' + event.error);
+      };
+
+      recognition.start();
     }
 
     function startRandomScenario() {
@@ -123,128 +255,9 @@
       dispatch.className = 'chat-message';
       dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
       chat.appendChild(dispatch);
+      totalTime = 15 * 60;
       startTimer();
     }
-
-    window.onload = () => { document.getElementById('timer').textContent = 'Ready to begin'; };
-  
-let totalTime = 15 * 60;
-let countdown;
-let scenarioActive = false;
-
-function startTimer() {
-  const timer = document.getElementById('start-button');
-  scenarioActive = true;
-  countdown = setInterval(() => {
-    const mins = Math.floor(totalTime / 60);
-    const secs = totalTime % 60;
-    timer.textContent = '🕒 ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-    if (totalTime <= 0) {
-      clearInterval(countdown);
-      timer.textContent = '⏰ Time is up!';
-      scenarioActive = false;
-    }
-    totalTime--;
-  }, 1000);
-}
-
-function stopTimer() {
-  clearInterval(countdown);
-  document.getElementById('start-button').textContent = '⏹ Scenario Ended';
-  scenarioActive = false;
-}
-
-async function sendMessage(messageOverride = null) {
-  const input = document.getElementById('user-input');
-  const message = messageOverride || input.value.trim();
-  if (!message) return;
-
-  const chat = document.getElementById('chat-display');
-  const userMsg = document.createElement('div');
-  userMsg.className = 'chat-message';
-  userMsg.textContent = message;
-  chat.appendChild(userMsg);
-  chat.scrollTop = chat.scrollHeight;
-
-  if (scenarioActive && /transport(ed)? by ambulance/i.test(message)) {
-    stopTimer();
-  }
-
-  input.value = '';
-
-  try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message })
-    });
-    const data = await response.json();
-    const botReply = data.reply;
-
-    // Speak the reply aloud
-    const utterance = new SpeechSynthesisUtterance(botReply);
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    speechSynthesis.speak(utterance);
-
-    const botMsg = document.createElement('div');
-    botMsg.className = 'chat-message';
-    botMsg.textContent = botReply;
-    chat.appendChild(botMsg);
-    chat.scrollTop = chat.scrollHeight;
-  } catch {
-    const errMsg = document.createElement('div');
-    errMsg.className = 'chat-message';
-    errMsg.textContent = 'Error communicating with AI.';
-    chat.appendChild(errMsg);
-  }
-}
-
-function endScenario() {
-  stopTimer();
-  const chat = document.getElementById('chat-display');
-  const endMsg = document.createElement('div');
-  endMsg.className = 'chat-message';
-  endMsg.textContent = '🚑 Scenario ended. Preparing summary and feedback...';
-  chat.appendChild(endMsg);
-}
-
-function startVoiceInput() {
-  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  recognition.onresult = function(event) {
-    const speechResult = event.results[0][0].transcript;
-    sendMessage(speechResult);
-  };
-
-  recognition.onerror = function(event) {
-    alert('Mic error: ' + event.error);
-  };
-
-  recognition.start();
-}
-
-function startRandomScenario() {
-  const scenarios = [
-    "You are dispatched to a 45-year-old male with chest pain.",
-    "You are dispatched to a 70-year-old female in respiratory distress.",
-    "You are dispatched to a 15-year-old male with trauma from a fall.",
-    "You are dispatched to a 60-year-old diabetic patient with altered mental status.",
-    "You are dispatched to a 25-year-old female who fainted at work."
-  ];
-  const i = Math.floor(Math.random() * scenarios.length);
-  const chat = document.getElementById('chat-display');
-  chat.innerHTML = '';
-  const dispatch = document.createElement('div');
-  dispatch.className = 'chat-message';
-  dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
-  chat.appendChild(dispatch);
-  totalTime = 15 * 60;
-  startTimer();
-}
-</script>
+  </script>
 </body>
 </html>
