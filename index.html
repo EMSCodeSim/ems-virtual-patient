@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chatbot Interface</title>
+  <title>EMS Virtual Patient</title>
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
+      height: 100%;
+    }
+
+    body {
       display: flex;
       flex-direction: column;
-      height: 100vh;
     }
 
     header {
@@ -26,7 +30,7 @@
 
     #chat-display {
       flex: 1;
-      padding: 20px;
+      padding: 10px;
       background-color: #f5f5f5;
       overflow-y: auto;
       display: flex;
@@ -38,43 +42,64 @@
       border-radius: 10px;
       padding: 10px;
       margin-bottom: 10px;
-      max-width: 70%;
+      max-width: 90%;
       box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
     }
 
     #chat-input {
       display: flex;
+      flex-direction: column;
       padding: 10px;
       background-color: #ddd;
     }
 
     #chat-input input {
-      flex: 1;
-      padding: 10px;
+      padding: 15px;
       font-size: 16px;
       border: none;
       border-radius: 5px;
+      margin-bottom: 10px;
     }
 
     #chat-input button {
-      margin-left: 10px;
-      padding: 10px 20px;
+      padding: 10px;
       font-size: 16px;
       background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: I would like to start a new site with the information below 
-
-Make it a simple page with a logo at the top 
-
-Large chat box that displays chatbot information that can be updated to display photos at a later time 
-
-Smaller chatbot at bottom to allow user to input text 5px;
+      border-radius: 5px;
       cursor: pointer;
+      margin-bottom: 5px;
     }
 
     #chat-input button:hover {
       background-color: #45a049;
+    }
+
+    #timer {
+      text-align: center;
+      padding: 10px;
+      font-size: 18px;
+      background-color: #eee;
+      border-top: 1px solid #ccc;
+    }
+
+    @media (max-width: 768px) {
+      .chat-message {
+        max-width: 100%;
+      }
+
+      #chat-input {
+        padding: 5px;
+      }
+
+      #chat-input input {
+        font-size: 14px;
+      }
+
+      #chat-input button {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -83,57 +108,90 @@ Smaller chatbot at bottom to allow user to input text 5px;
     <img src="logo.png" alt="Logo" />
   </header>
 
-  <div id="chat-display">
-    <div class="chat-message">Welcome! How can I help you today?</div>
-  </div>
+  <div id="chat-display"></div>
 
   <div id="chat-input">
     <input type="text" id="user-input" placeholder="Type your message here..." />
     <button onclick="sendMessage()">Send</button>
+    <button onclick="endScenario()">End Scenario</button>
   </div>
 
+  <div id="timer">Time Remaining: 15:00</div>
+
   <script>
-  async function sendMessage() {
-    const input = document.getElementById('user-input');
-    const message = input.value.trim();
-    if (message === '') return;
+    let totalTime = 15 * 60; // 15 minutes
+    let countdown;
 
-    const chatDisplay = document.getElementById('chat-display');
-    
-    // Display user's message
-    const userMessage = document.createElement('div');
-    userMessage.className = 'chat-message';
-    userMessage.textContent = message;
-    chatDisplay.appendChild(userMessage);
-    chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    function startTimer() {
+      const timerElement = document.getElementById('timer');
+      countdown = setInterval(() => {
+        const minutes = Math.floor(totalTime / 60);
+        const seconds = totalTime % 60;
+        timerElement.textContent = 'Time Remaining: ' +
+          String(minutes).padStart(2, '0') + ':' +
+          String(seconds).padStart(2, '0');
 
-    input.value = '';
+        if (totalTime <= 0) {
+          clearInterval(countdown);
+          timerElement.textContent = 'Time is up!';
+        }
 
-    try {
-      // Send user input to Netlify function
-      const response = await fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      });
-
-      const data = await response.json();
-      const botReply = data.reply;
-
-      // Display AI response
-      const botMessage = document.createElement('div');
-      botMessage.className = 'chat-message';
-      botMessage.textContent = botReply;
-      chatDisplay.appendChild(botMessage);
-      chatDisplay.scrollTop = chatDisplay.scrollHeight;
-    } catch (err) {
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'chat-message';
-      errorMessage.textContent = 'Error talking to AI.';
-      chatDisplay.appendChild(errorMessage);
+        totalTime--;
+      }, 1000);
     }
-  }
-</script>
 
+    function stopTimer() {
+      clearInterval(countdown);
+      document.getElementById('timer').textContent += ' (Scenario Ended)';
+    }
+
+    window.onload = startTimer;
+
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const message = input.value.trim();
+      if (message === '') return;
+
+      const chatDisplay = document.getElementById('chat-display');
+      const userMessage = document.createElement('div');
+      userMessage.className = 'chat-message';
+      userMessage.textContent = message;
+      chatDisplay.appendChild(userMessage);
+      chatDisplay.scrollTop = chatDisplay.scrollHeight;
+
+      input.value = '';
+
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        const botReply = data.reply;
+
+        const botMessage = document.createElement('div');
+        botMessage.className = 'chat-message';
+        botMessage.textContent = botReply;
+        chatDisplay.appendChild(botMessage);
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+      } catch (err) {
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'chat-message';
+        errorMessage.textContent = 'Error talking to AI.';
+        chatDisplay.appendChild(errorMessage);
+      }
+    }
+
+    function endScenario() {
+      stopTimer();
+      const chatDisplay = document.getElementById('chat-display');
+      const endMessage = document.createElement('div');
+      endMessage.className = 'chat-message';
+      endMessage.textContent = '🚑 Scenario ended. Preparing summary and feedback...';
+      chatDisplay.appendChild(endMessage);
+    }
+  </script>
 </body>
 </html>
