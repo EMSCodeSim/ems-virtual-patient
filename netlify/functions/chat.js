@@ -14,7 +14,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({
         model: "gpt-4-turbo",
         messages: [
-          { role: "system", content: "You are a virtual EMS patient for an NREMT medical assessment simulation. Only respond as the patient, dispatch, or proctor." },
+          { role: "system", content: " Patient- you will role-play as a realistic patient with a medical complaint as described in the dispatch information. Only answer questions that the user directly asks. Do not guide or coach. Use emotional, physical, and verbal responses appropriate to the patient's condition. React realistically if the user skips steps or does not build rapport, or does not provide treatment in a timely manor. Adjust your answers based on the user's assessment or treatment quality. ." },
           { role: "user", content: userMessage }
         ]
       })
