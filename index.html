@@ -108,13 +108,6 @@ Smaller chatbot at bottom to allow user to input text 5px;
       chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
       // Placeholder chatbot response
-      setTimeout(() => {
-        const botMessage = document.createElement('div');
-        botMessage.className = 'chat-message';
-        botMessage.textContent = 'Thanks for your message! (Bot reply)';
-        chatDisplay.appendChild(botMessage);
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
-      }, 500);
     }
   </script>
 </body>
