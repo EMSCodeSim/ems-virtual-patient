@@ -66,9 +66,6 @@
       border-radius: 5px;
       cursor: pointer;
     }
-    #send-button:hover {
-      background-color: #45a049;
-    }
     #button-row {
       margin-top: 10px;
       display: flex;
@@ -87,14 +84,8 @@
     #mic-button {
       background-color: #2196F3;
     }
-    #mic-button:hover {
-      background-color: #1976D2;
-    }
     #end-button {
       background-color: #f44336;
-    }
-    #end-button:hover {
-      background-color: #d32f2f;
     }
     #start-button {
       padding: 20px 40px;
@@ -104,17 +95,6 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-    }
-    @media (max-width: 768px) {
-      #input-row {
-        flex-direction: column;
-      }
-      #send-button, #mic-button, #end-button {
-        width: 100%;
-      }
-      #button-row {
-        flex-direction: column;
-      }
     }
   </style>
 </head>
@@ -191,20 +171,26 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message })
         });
+
         const data = await response.json();
         const botReply = data.reply;
 
-        // Read it aloud
-        const utterance = new SpeechSynthesisUtterance(botReply);
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        speechSynthesis.speak(utterance);
-
-        const botMsg = document.createElement('div');
-        botMsg.className = 'chat-message';
-        botMsg.textContent = botReply;
-        chat.appendChild(botMsg);
+        const typingMsg = document.createElement('div');
+        typingMsg.className = 'chat-message';
+        typingMsg.textContent = '...';
+        chat.appendChild(typingMsg);
         chat.scrollTop = chat.scrollHeight;
+
+        setTimeout(() => {
+          typingMsg.textContent = botReply;
+
+          const utterance = new SpeechSynthesisUtterance(botReply);
+          utterance.rate = 1;
+          utterance.pitch = 1;
+          speechSynthesis.speak(utterance);
+
+          chat.scrollTop = chat.scrollHeight;
+        }, 1000);
       } catch {
         const errMsg = document.createElement('div');
         errMsg.className = 'chat-message';
