@@ -21,9 +21,11 @@ exports.handler = async function(event, context) {
     });
 
     const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content;
+
     return {
       statusCode: 200,
-      body: JSON.stringify(data)
+      body: JSON.stringify({ reply }) // 🔥 Fix is here
     };
 
   } catch (err) {
