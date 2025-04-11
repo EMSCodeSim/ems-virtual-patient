@@ -93,22 +93,47 @@ Smaller chatbot at bottom to allow user to input text 5px;
   </div>
 
   <script>
-    function sendMessage() {
-      const input = document.getElementById('user-input');
-      const message = input.value.trim();
-      if (message === '') return;
+  async function sendMessage() {
+    const input = document.getElementById('user-input');
+    const message = input.value.trim();
+    if (message === '') return;
 
-      const chatDisplay = document.getElementById('chat-display');
-      const userMessage = document.createElement('div');
-      userMessage.className = 'chat-message';
-      userMessage.textContent = message;
-      chatDisplay.appendChild(userMessage);
+    const chatDisplay = document.getElementById('chat-display');
+    
+    // Display user's message
+    const userMessage = document.createElement('div');
+    userMessage.className = 'chat-message';
+    userMessage.textContent = message;
+    chatDisplay.appendChild(userMessage);
+    chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
-      input.value = '';
+    input.value = '';
+
+    try {
+      // Send user input to Netlify function
+      const response = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+      const botReply = data.reply;
+
+      // Display AI response
+      const botMessage = document.createElement('div');
+      botMessage.className = 'chat-message';
+      botMessage.textContent = botReply;
+      chatDisplay.appendChild(botMessage);
       chatDisplay.scrollTop = chatDisplay.scrollHeight;
-
-      // Placeholder chatbot response
+    } catch (err) {
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'chat-message';
+      errorMessage.textContent = 'Error talking to AI.';
+      chatDisplay.appendChild(errorMessage);
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
