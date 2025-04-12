@@ -120,14 +120,10 @@
     </div>
   </div>
 
-  <!-- Load chatbot logic -->
-  <script src="chat_logic.js"></script>
-
   <script>
     let totalTime = 15 * 60;
     let countdown;
     let scenarioActive = false;
-    let prebuiltResponses = {};
 
     function startTimer() {
       const timer = document.getElementById('start-button');
@@ -188,12 +184,30 @@
 
       input.value = '';
 
-      const botReply = handleUserMessage(message, prebuiltResponses) || '⚠️ No response available.';
-      const botMsg = document.createElement('div');
-      botMsg.className = 'chat-message';
-      botMsg.textContent = botReply;
-      chat.appendChild(botMsg);
-      chat.scrollTop = chat.scrollHeight;
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        const botReply = data?.reply || '⚠️ No response received from patient.';
+
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-message';
+        botMsg.textContent = botReply;
+        chat.appendChild(botMsg);
+        chat.scrollTop = chat.scrollHeight;
+
+        console.log("GPT Response:", botReply);
+      } catch (err) {
+        console.error(err);
+        const errMsg = document.createElement('div');
+        errMsg.className = 'chat-message';
+        errMsg.textContent = '⚠️ Error communicating with AI.';
+        chat.appendChild(errMsg);
+      }
     }
 
     function endScenario() {
@@ -222,16 +236,6 @@
 
       recognition.start();
     }
-
-    // Load prebuilt responses
-    fetch('prebuilt_responses.json')
-      .then(response => response.json())
-      .then(data => {
-        prebuiltResponses = data;
-      })
-      .catch(err => {
-        console.error("Error loading prebuilt responses:", err);
-      });
   </script>
 </body>
 </html>
