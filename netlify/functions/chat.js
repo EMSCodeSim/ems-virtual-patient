@@ -1,66 +1,86 @@
 const fetch = require('node-fetch');
 
-let conversationHistory = [];
+const GPT3_MODEL = "gpt-3.5-turbo";
+const GPT4_MODEL = "gpt-4-turbo";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 exports.handler = async function(event, context) {
   try {
-    const body = JSON.parse(event.body);
-    const userMessage = body.message;
+    const { message } = JSON.parse(event.body);
+    const apiKey = process.env.OPENAI_API_KEY;
 
-    // If reset signal sent
-    if (body.reset === true) {
-      conversationHistory = [];
-    }
-
-    // System prompt always stays at the beginning
-    const systemPrompt = {
-      role: "system",
-      content: `
-You are an interactive EMS simulator designed to help NREMT EMT-B students practice for the Medical Patient Assessment skill.
-
-You will play two roles:
-1. Proctor – do not guide the student, only answer when asked for details the patient wouldn’t know (vitals, scene safety, AVPU, etc.). Score silently. Give a scenario summary and feedback at the end.
-2. Patient – respond only when asked. Act realistically, adjust behavior if treatment is skipped or done poorly.
-
-Be immersive and realistic. Remember all prior inputs unless reset.
-`
-    };
-
-    // Add system prompt only if conversation just started
-    if (conversationHistory.length === 0) {
-      conversationHistory.push(systemPrompt);
-    }
-
-    // Add user message
-    conversationHistory.push({ role: "user", content: userMessage });
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Step 1: Send message to GPT-3.5 as triage
+    const triageResponse = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4-turbo",
-        messages: conversationHistory
+        model: GPT3_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `You are an EMS simulator. Your role is to triage the user's message and decide whether:
+1. You should respond directly as a proctor.
+2. You should escalate the message to GPT-4 if it requires emotional complexity, patient dialogue, or final scenario scoring.
+If escalation is needed, reply only with: ESCALATE.
+Otherwise, reply with your response as a proctor.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
       })
     });
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content;
+    const triageData = await triageResponse.json();
+    const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
 
-    // Add AI's reply to the conversation
-    conversationHistory.push({ role: "assistant", content: reply });
+    if (triageOutput === "ESCALATE") {
+      // Step 2: Escalate to GPT-4
+      const gpt4Response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: GPT4_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: `You are a highly realistic EMS patient simulator. Respond with patient dialogue, complex reasoning, emotional tone, or provide scenario scoring when needed.`
+            },
+            {
+              role: "user",
+              content: message
+            }
+          ]
+        })
+      });
 
+      const gpt4Data = await gpt4Response.json();
+      const gpt4Output = gpt4Data.choices?.[0]?.message?.content?.trim();
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ reply: gpt4Output })
+      };
+    }
+
+    // GPT-3.5 handled it
     return {
       statusCode: 200,
-      body: JSON.stringify({ reply })
+      body: JSON.stringify({ reply: triageOutput })
     };
 
   } catch (err) {
+    console.error("Chat error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "OpenAI Error", details: err.message })
+      body: JSON.stringify({ reply: "⚠️ Error handling the message." })
     };
   }
 };
