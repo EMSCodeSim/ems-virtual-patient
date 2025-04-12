@@ -9,7 +9,7 @@ exports.handler = async function(event, context) {
     const { message } = JSON.parse(event.body);
     const apiKey = process.env.OPENAI_API_KEY;
 
-    // Step 1: Send message to GPT-3.5 as triage
+    // Step 1: Use GPT-3.5 as triage
     const triageResponse = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -21,11 +21,10 @@ exports.handler = async function(event, context) {
         messages: [
           {
             role: "system",
-            content: `You are an EMS simulator. Your role is to triage the user's message and decide whether:
-1. You should respond directly as a proctor.
-2. You should escalate the message to GPT-4 if it requires emotional complexity, patient dialogue, or final scenario scoring.
-If escalation is needed, reply only with: ESCALATE.
-Otherwise, reply with your response as a proctor.`
+            content: `You are an EMS simulator assistant. 
+Your job is to triage the user's message and respond in one of two ways:
+- If you can handle the response as a proctor or dispatcher, answer directly.
+- If the message is complex (e.g. patient speaking, emotional, or requires scoring), respond only with: ESCALATE`
           },
           {
             role: "user",
@@ -39,7 +38,7 @@ Otherwise, reply with your response as a proctor.`
     const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
 
     if (triageOutput === "ESCALATE") {
-      // Step 2: Escalate to GPT-4
+      // Step 2: Use GPT-4 Turbo for complex responses
       const gpt4Response = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
@@ -51,7 +50,7 @@ Otherwise, reply with your response as a proctor.`
           messages: [
             {
               role: "system",
-              content: `You are a highly realistic EMS patient simulator. Respond with patient dialogue, complex reasoning, emotional tone, or provide scenario scoring when needed.`
+              content: `You are an EMS virtual patient simulator using GPT-4. Respond in realistic detail as either the patient or provide a detailed scenario summary or score breakdown.`
             },
             {
               role: "user",
@@ -70,7 +69,7 @@ Otherwise, reply with your response as a proctor.`
       };
     }
 
-    // GPT-3.5 handled it
+    // GPT-3.5 responded normally
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
@@ -80,7 +79,7 @@ Otherwise, reply with your response as a proctor.`
     console.error("Chat error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "⚠️ Error handling the message." })
+      body: JSON.stringify({ reply: "⚠️ Server error." })
     };
   }
 };
