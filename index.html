@@ -2,125 +2,237 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EMS Code Sim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMS Virtual Patient</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
+    html, body {
       margin: 0;
       padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100%;
     }
-
-    #chat-container {
-      width: 90%;
-      max-width: 700px;
-      margin: 50px auto;
-      background: #fff;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
+    body {
+      display: flex;
+      flex-direction: column;
     }
-
-    #messages {
-      height: 400px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
+    header {
       padding: 10px;
-      background: #fefefe;
+      background-color: #1e1e1e;
+      color: white;
+      text-align: center;
+    }
+    header img {
+      height: 50px;
+    }
+    #chat-display {
+      flex: 1;
+      padding: 10px;
+      background-color: #f5f5f5;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-message {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 10px;
       margin-bottom: 10px;
+      max-width: 90%;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
     }
-
-    .message {
-      margin: 5px 0;
+    #chat-input {
+      padding: 10px;
+      background-color: #ddd;
     }
-
-    .user {
-      font-weight: bold;
-      color: #0077cc;
-    }
-
-    .bot {
-      color: #333;
-    }
-
-    #input-area {
+    #input-row {
       display: flex;
     }
-
     #user-input {
-      flex-grow: 1;
+      flex: 1;
       padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
-    #send-btn {
-      margin-left: 10px;
-      padding: 10px 15px;
+      font-size: 16px;
       border: none;
-      background-color: #0077cc;
+      border-radius: 5px;
+      resize: none;
+      height: 60px;
+    }
+    #send-button {
+      margin-left: 10px;
+      padding: 14px 24px;
+      font-size: 18px;
+      background-color: #4CAF50;
       color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #button-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    #mic-button, #end-button {
+      font-size: 18px;
+      padding: 16px 20px;
+      width: 48%;
+      height: 60px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #mic-button {
+      background-color: #2196F3;
+    }
+    #end-button {
+      background-color: #f44336;
+    }
+    #start-button {
+      padding: 20px 40px;
+      font-size: 24px;
+      background-color: #007bff;
+      color: white;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="chat-container">
-    <h2>EMS Code Sim</h2>
-    <div id="messages"></div>
-    <div id="input-area">
-      <input type="text" id="user-input" placeholder="Type your message..." />
-      <button id="send-btn">Send</button>
+  <header>
+    <img src="logo.png" alt="Logo" />
+  </header>
+
+  <div style="text-align: center; padding: 10px;">
+    <button id="start-button" onclick="startRandomScenario()">🚑 Start Simulation</button>
+  </div>
+
+  <div id="chat-display"></div>
+
+  <div id="chat-input">
+    <div id="input-row">
+      <textarea id="user-input" placeholder="Type your message here..."></textarea>
+      <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+    <div id="button-row">
+      <button id="mic-button" onclick="startVoiceInput()">🎤 Speak</button>
+      <button id="end-button" onclick="endScenario()">End Scenario</button>
     </div>
   </div>
 
-  <!-- Include chat logic -->
-  <script src="chat_logic.js"></script>
-
   <script>
-    const messagesDiv = document.getElementById("messages");
-    const input = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
+    let totalTime = 15 * 60;
+    let countdown;
+    let scenarioActive = false;
 
-    let prebuiltResponses = {};
-
-    // Load prebuilt responses
-    fetch('prebuilt_responses.json')
-      .then(response => response.json())
-      .then(data => {
-        prebuiltResponses = data;
-        console.log("Prebuilt responses loaded.");
-      })
-      .catch(error => {
-        console.error("Error loading JSON:", error);
-      });
-
-    function addMessage(text, sender = "bot") {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-      msg.textContent = `${sender === "user" ? "You" : "Sim"}: ${text}`;
-      messagesDiv.appendChild(msg);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    function startTimer() {
+      const timer = document.getElementById('start-button');
+      scenarioActive = true;
+      countdown = setInterval(() => {
+        const mins = Math.floor(totalTime / 60);
+        const secs = totalTime % 60;
+        timer.textContent = '🕒 ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        if (totalTime <= 0) {
+          clearInterval(countdown);
+          timer.textContent = '⏰ Time is up!';
+          scenarioActive = false;
+        }
+        totalTime--;
+      }, 1000);
     }
 
-    function processMessage() {
-      const userMessage = input.value.trim();
-      if (userMessage === "") return;
-
-      addMessage(userMessage, "user");
-
-      const reply = handleUserMessage(userMessage, prebuiltResponses);
-      addMessage(reply, "bot");
-
-      input.value = "";
+    function stopTimer() {
+      clearInterval(countdown);
+      document.getElementById('start-button').textContent = '⏹ Scenario Ended';
+      scenarioActive = false;
     }
 
-    sendBtn.addEventListener("click", processMessage);
-    input.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") processMessage();
-    });
+    async function sendMessage(messageOverride = null) {
+      const input = document.getElementById('user-input');
+      const message = messageOverride || input.value.trim();
+      if (!message) return;
+
+      const chat = document.getElementById('chat-display');
+      const userMsg = document.createElement('div');
+      userMsg.className = 'chat-message';
+      userMsg.textContent = message;
+      chat.appendChild(userMsg);
+      chat.scrollTop = chat.scrollHeight;
+
+      if (scenarioActive && /transport(ed)? by ambulance/i.test(message)) {
+        stopTimer();
+      }
+
+      input.value = '';
+
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+        const botReply = data?.reply || '⚠️ No response received from patient.';
+
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-message';
+        botMsg.textContent = botReply;
+        chat.appendChild(botMsg);
+        chat.scrollTop = chat.scrollHeight;
+      } catch {
+        const errMsg = document.createElement('div');
+        errMsg.className = 'chat-message';
+        errMsg.textContent = 'Error communicating with AI.';
+        chat.appendChild(errMsg);
+      }
+    }
+
+    function endScenario() {
+      stopTimer();
+      const chat = document.getElementById('chat-display');
+      const endMsg = document.createElement('div');
+      endMsg.className = 'chat-message';
+      endMsg.textContent = '🚑 Scenario ended. Preparing summary and feedback...';
+      chat.appendChild(endMsg);
+    }
+
+    function startVoiceInput() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function(event) {
+        const speechResult = event.results[0][0].transcript;
+        sendMessage(speechResult);
+      };
+
+      recognition.onerror = function(event) {
+        alert('Mic error: ' + event.error);
+      };
+
+      recognition.start();
+    }
+
+    function startRandomScenario() {
+      const scenarios = [
+        "You are dispatched to a 45-year-old male with chest pain.",
+        "You are dispatched to a 70-year-old female in respiratory distress.",
+        "You are dispatched to a 15-year-old male with trauma from a fall.",
+        "You are dispatched to a 60-year-old diabetic patient with altered mental status.",
+        "You are dispatched to a 25-year-old female who fainted at work."
+      ];
+      const i = Math.floor(Math.random() * scenarios.length);
+      const chat = document.getElementById('chat-display');
+      chat.innerHTML = '';
+      const dispatch = document.createElement('div');
+      dispatch.className = 'chat-message';
+      dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
+      chat.appendChild(dispatch);
+      totalTime = 15 * 60;
+      startTimer();
+    }
   </script>
 </body>
 </html>
