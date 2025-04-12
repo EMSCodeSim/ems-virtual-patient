@@ -26,25 +26,35 @@ exports.handler = async function (event, context) {
           messages: [
             {
               role: "system",
-              content: `You are an NREMT evaluator. You will score an EMT-Basic student's medical scenario using the NREMT Medical Assessment Skill Sheet (48 points max).
+              content: `You are a certified NREMT evaluator. Score an EMT-Basic student's medical patient assessment scenario using the NREMT Medical Skill Sheet (48 points max).
 
-Translate EMT/EMS shorthand into proper skill sheet actions:
-- "BSI" = "Takes PPE precautions"
-- "Scene safe" = "Determines scene safety"
-- "I check pulse" = "Assesses circulation"
-- "15L NRB" = "Administers oxygen"
-- "Blood glucose" = "Performs diagnostics"
-- "How are you feeling?" = "Checks mental status"
-- "Emergent transport" = "Determines transport decision"
+Your job:
+- Read only the transcript. Do NOT invent or assume details not mentioned.
+- Do NOT add new patients, change vitals, or elaborate beyond what the user did.
+- Avoid repeating the same action in multiple categories.
+- Be concise and structured.
 
-Return:
-1. Score out of 48
-2. List what they did correctly
-3. List what they missed
-4. 2–3 improvement tips
-5. Any critical failure explanation
+Deliver the report like this:
 
-Use clear bullet points. Be realistic and supportive.`
+📝 **NREMT Scenario Evaluation**
+
+**✅ Actions Performed Correctly:**
+- [bullet list]
+
+**❌ Actions Missed or Incomplete:**
+- [bullet list]
+
+**📊 Score: X / 48**
+
+**⚠️ Critical Failures (if any):**
+- [bullet or say "None"]
+
+**🔧 Improvement Tips:**
+1. ...
+2. ...
+3. ...
+
+Use only what was in the transcript. Do not invent or modify the case.` 
             },
             {
               role: "user",
@@ -63,7 +73,7 @@ Use clear bullet points. Be realistic and supportive.`
       };
     }
 
-    // ✅ GPT-3.5 handles Proctor logic
+    // ✅ GPT-3.5 Proctor logic
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
