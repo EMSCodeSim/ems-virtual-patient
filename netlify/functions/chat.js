@@ -9,11 +9,13 @@ exports.handler = async function (event, context) {
     const { message } = JSON.parse(event.body);
     const apiKey = process.env.OPENAI_API_KEY;
 
+    // Check if it's a final report message
     const isEndScenario = message.startsWith("[END SCENARIO]");
 
-    // 🟥 Scenario End: Run full GPT-4 scoring logic
     if (isEndScenario) {
-      const gpt4 = await fetch(OPENAI_API_URL, {
+      const transcript = message.replace("[END SCENARIO]", "").trim();
+
+      const gpt4Response = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -24,35 +26,42 @@ exports.handler = async function (event, context) {
           messages: [
             {
               role: "system",
-              content: `You are acting as a NREMT Proctor scoring an EMT-Basic medical patient assessment scenario using the official NREMT skill sheet.
+              content: `You are a strict but helpful NREMT Proctor.
 
-Evaluate the student based on this transcript. Provide the following:
+Your job is to evaluate a student's medical patient assessment scenario for their EMT-Basic test. Use the NREMT Medical Assessment Skill Sheet (48 points total). Look for:
+
+- PPE, scene safety, MOI/NOI, AVPU, ABCs
+- OPQRST, SAMPLE, vitals, interventions
+- Reassessment, field impression, and transport decision
+
+Return:
 1. A score out of 48
 2. What was done correctly
 3. What was missed
-4. 2–3 personalized improvement tips based on what they forgot or did out of order
-5. Explain any reasons for a critical failure if applicable
+4. 2–3 personalized tips
+5. Any critical failures and explanation
 
-Use the NREMT categories such as PPE, scene safety, MOI/NOI, AVPU, ABCs, OPQRST, SAMPLE, vitals, treatment decisions, and reassessments. Be realistic and strict but supportive.`
+Be realistic and structured.`
             },
             {
               role: "user",
-              content: message.replace("[END SCENARIO]", "Transcript:")
+              content: `Here is the full transcript of user actions:\n\n${transcript}`
             }
           ]
         })
       });
 
-      const gpt4Data = await gpt4.json();
-      const gpt4Output = gpt4Data.choices?.[0]?.message?.content?.trim();
+      const gpt4Data = await gpt4Response.json();
+
+      const gpt4Output = gpt4Data?.choices?.[0]?.message?.content?.trim();
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 did not return a final report." })
+        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 returned no report text." })
       };
     }
 
-    // 🔁 Default: GPT-3.5 Proctor Triage Logic
+    // Default: GPT-3.5 triage and proctor handling
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -64,25 +73,13 @@ Use the NREMT categories such as PPE, scene safety, MOI/NOI, AVPU, ABCs, OPQRST,
         messages: [
           {
             role: "system",
-            content: `You are the NREMT Proctor for an EMS simulation. 
-Your job is to evaluate the user’s actions using the NREMT skill sheet.
+            content: `You are the NREMT Proctor for an EMS simulation.
 
-Strict rules:
-- Only respond to what a real proctor would.
-- If the user asks for vitals or scene details, give realistic answers.
-- Do NOT ask questions.
-- Do NOT give hints unless directly asked.
-- If the message is for the patient or feedback, reply ONLY with: ESCALATE.
-
-Examples:
-User: I check pulse  
-You: Pulse is 110, strong and regular
-
-User: Is the scene safe?  
-You: Yes, the scene is safe
-
-User: What's your name?  
-You: ESCALATE`
+Respond only with clinical information:
+- Vitals, scene safety, number of patients, AVPU, etc.
+- NEVER ask the user questions.
+- NEVER give advice or coaching unless asked.
+- If the user is talking to the patient or asking for feedback, respond only with: ESCALATE.`
           },
           {
             role: "user",
@@ -93,10 +90,9 @@ You: ESCALATE`
     });
 
     const triageData = await triage.json();
-    const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
+    const triageOutput = triageData?.choices?.[0]?.message?.content?.trim();
 
     if (triageOutput === "ESCALATE") {
-      // 🔁 Escalate to GPT-4 Turbo (patient logic)
       const gpt4 = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
@@ -108,14 +104,9 @@ You: ESCALATE`
           messages: [
             {
               role: "system",
-              content: `You are roleplaying as a realistic EMS patient in a medical scenario.
+              content: `You are roleplaying as a realistic EMS patient.
 
-Guidelines:
-- Only respond if spoken to.
-- Be emotional, distressed, or confused depending on condition.
-- If treatment is skipped or slow, worsen appropriately.
-- Never help the user.
-- Do not explain concepts or coach the user.`
+Only respond when directly spoken to. Act emotional, distressed, or confused as appropriate. Do not help the user. If care is delayed or skipped, worsen your symptoms.`
             },
             {
               role: "user",
@@ -126,15 +117,14 @@ Guidelines:
       });
 
       const gpt4Data = await gpt4.json();
-      const gpt4Output = gpt4Data.choices?.[0]?.message?.content?.trim();
+      const gpt4Output = gpt4Data?.choices?.[0]?.message?.content?.trim();
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 patient response failed." })
+        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 did not respond properly." })
       };
     }
 
-    // ✅ GPT-3.5 handled the request (Proctor)
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
