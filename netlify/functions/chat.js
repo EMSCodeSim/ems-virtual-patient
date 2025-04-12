@@ -9,111 +9,91 @@ exports.handler = async function (event, context) {
     const { message } = JSON.parse(event.body);
     const apiKey = process.env.OPENAI_API_KEY;
 
-    // Quick check to decide if this is a patient interaction or score request
-    const escalateTriggers = [
-      "pain", "symptoms", "describe", "where does it hurt",
-      "how long", "how bad", "radiate", "feel like", "scale of",
-      "feedback", "score", "how did I do", "what did I miss"
-    ];
-
     const lowerMsg = message.toLowerCase();
-    const shouldEscalate = escalateTriggers.some(trigger => lowerMsg.includes(trigger));
 
-    // 🔁 Step 1: Use GPT-3.5 as default triage + proctor
-    if (!shouldEscalate) {
-      const triageResponse = await fetch(OPENAI_API_URL, {
+    // Step 1: Send to GPT-3.5 (Proctor + Triage)
+    const triage = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: GPT3_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `You are the NREMT Proctor for an EMS simulation. 
+Respond ONLY as the Proctor.
+- Provide vitals if asked (e.g., BP, HR, skin).
+- Give scene details like safety, number of patients.
+- Do NOT help unless asked directly.
+- If the message is directed at the patient or asks for feedback, reply with just: ESCALATE.`
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      })
+    });
+
+    const triageData = await triage.json();
+    const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
+
+    if (triageOutput === "ESCALATE") {
+      // Step 2: Send to GPT-4 Turbo for patient or feedback logic
+      const gpt4 = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: GPT3_MODEL,
+          model: GPT4_MODEL,
           messages: [
             {
               role: "system",
-              content: `You are the NREMT Proctor for an EMS scenario. 
-Your role is to observe, score, and respond ONLY as a proctor.
-- Do not help unless asked.
-- If the user says "I check BP" or "I check vitals", give appropriate values (e.g., "BP is 110/70").
-- Track and internally score NREMT actions. 
-- Only respond to what a real test proctor would say.
-- If the message seems like patient dialogue or asking for scenario feedback, respond only with: ESCALATE.`
+              content: `You are simulating a realistic EMS patient or providing scenario scoring.
+If the message is a question to the patient:
+- Answer realistically based on your condition.
+- Do NOT guide or help unless directly asked.
+- React emotionally and physically appropriate to the condition.
+
+If the user is asking for feedback:
+- Score the scenario out of 48 points.
+- Mention what they did correctly and missed.
+- Provide 2-3 improvement tips.
+- Mention any critical failures if present.`
             },
             {
               role: "user",
               content: message
             }
           ]
-        }),
+        })
       });
 
-      const triageData = await triageResponse.json();
-      const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
+      const gpt4Data = await gpt4.json();
+      const gpt4Output = gpt4Data.choices?.[0]?.message?.content?.trim();
 
-      if (triageOutput === "ESCALATE") {
-        // Escalate to GPT-4
-        return await escalateToGPT4(message, apiKey);
-      }
-
-      // Respond with GPT-3.5 proctor answer
       return {
         statusCode: 200,
-        body: JSON.stringify({ reply: triageOutput })
+        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 failed to respond." })
       };
     }
 
-    // 🔁 Step 2: Escalate to GPT-4 Turbo for patient or scenario feedback
-    return await escalateToGPT4(message, apiKey);
+    // Default: GPT-3.5 Proctor response
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ reply: triageOutput })
+    };
 
   } catch (err) {
-    console.error("Chat Error:", err);
+    console.error("Chat error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "⚠️ Server error while processing message." }),
+      body: JSON.stringify({ reply: "⚠️ Server error occurred." })
     };
   }
 };
-
-// Separate function to call GPT-4 Turbo
-async function escalateToGPT4(message, apiKey) {
-  const gpt4Response = await fetch(OPENAI_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: GPT4_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: `You are the patient in an EMS scenario or the evaluator giving feedback.
-If the user is speaking to the patient:
-- Respond only to questions asked.
-- Be realistic: emotional, sick, confused, or in pain depending on the dispatch type.
-- Do NOT offer help unless the user builds rapport or asks something directly.
-
-If the user is asking for feedback:
-- Score their actions based on the NREMT Medical Skill Sheet (48 points max).
-- Note anything missed.
-- Include 2–3 personalized improvement tips.
-- Mention any critical failure reason if applicable.
-`
-        },
-        {
-          role: "user",
-          content: message
-        }
-      ]
-    }),
-  });
-
-  const gpt4Data = await gpt4Response.json();
-  const gpt4Output = gpt4Data.choices?.[0]?.message?.content?.trim();
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ reply: gpt4Output })
-  };
-}
