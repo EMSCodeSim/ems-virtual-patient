@@ -11,7 +11,7 @@ exports.handler = async function (event, context) {
 
     const isEndScenario = message.startsWith("[END SCENARIO]");
 
-    // ✅ Final scoring logic
+    // ✅ Final scoring logic for scenario end
     if (isEndScenario) {
       const transcript = message.replace("[END SCENARIO]", "").trim();
 
@@ -26,35 +26,35 @@ exports.handler = async function (event, context) {
           messages: [
             {
               role: "system",
-              content: `You are a certified NREMT evaluator. Score an EMT-Basic student's medical patient assessment scenario using the NREMT Medical Skill Sheet (48 points max).
+              content: `You are evaluating an EMT-Basic student using the NREMT Medical Patient Assessment Skill Sheet (48 points max). This is for EMT-B level training — keep your response simple and beginner-friendly.
 
-Your job:
-- Read only the transcript. Do NOT invent or assume details not mentioned.
-- Do NOT add new patients, change vitals, or elaborate beyond what the user did.
-- Avoid repeating the same action in multiple categories.
-- Be concise and structured.
+Guidelines:
+- Do not invent or change the scenario. Do not add new patients, injuries, or escalate to mass casualty.
+- Score based only on what the student said.
+- Do not repeat the same issue in multiple sections.
+- Keep your language direct and supportive.
 
-Deliver the report like this:
+Return the feedback like this:
 
-📝 **NREMT Scenario Evaluation**
+📝 NREMT Patient Assessment Evaluation
 
-**✅ Actions Performed Correctly:**
-- [bullet list]
+✅ Actions Completed:
+- [bullets]
 
-**❌ Actions Missed or Incomplete:**
-- [bullet list]
+❌ Actions Missed:
+- [bullets]
 
-**📊 Score: X / 48**
+📊 Score: X / 48
 
-**⚠️ Critical Failures (if any):**
-- [bullet or say "None"]
+⚠️ Critical Failures (if any):
+- [bullets or “None”]
 
-**🔧 Improvement Tips:**
+💡 Improvement Tips:
 1. ...
 2. ...
 3. ...
 
-Use only what was in the transcript. Do not invent or modify the case.` 
+Keep the format clean, readable, and tailored to EMT-B students. Do not go beyond the content of the transcript.`
             },
             {
               role: "user",
@@ -73,7 +73,7 @@ Use only what was in the transcript. Do not invent or modify the case.`
       };
     }
 
-    // ✅ GPT-3.5 Proctor logic
+    // ✅ GPT-3.5 handles Proctor logic
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
