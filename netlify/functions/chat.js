@@ -11,7 +11,7 @@ exports.handler = async function (event, context) {
 
     const isEndScenario = message.startsWith("[END SCENARIO]");
 
-    // ✅ FINAL SCORING SECTION
+    // ✅ Final scoring logic
     if (isEndScenario) {
       const transcript = message.replace("[END SCENARIO]", "").trim();
 
@@ -26,32 +26,29 @@ exports.handler = async function (event, context) {
           messages: [
             {
               role: "system",
-              content: `You are a certified NREMT evaluator scoring an EMT-Basic student's medical patient assessment scenario using the official NREMT Medical Assessment Skill Sheet (48 total points).
+              content: `You are an NREMT evaluator. You will score an EMT-Basic student's medical scenario using the NREMT Medical Assessment Skill Sheet (48 points max).
 
-Your task:
-- Read the transcript of the student's performance.
-- Translate common EMS/EMT slang into proper skill sheet actions:
-  - "BSI" = "Takes PPE precautions"
-  - "Scene safe" = "Determines scene safety"
-  - "I check pulse" = "Assesses circulation"
-  - "Rate your pain" = "Assesses severity"
-  - "15L NRB" = "Administers oxygen"
-  - "Any allergies?" = "Asks about allergies"
-  - "Can you tell me your name?" = "Checks AVPU"
-  - "We’re going emergent" = "Determines transport decision"
+Translate EMT/EMS shorthand into proper skill sheet actions:
+- "BSI" = "Takes PPE precautions"
+- "Scene safe" = "Determines scene safety"
+- "I check pulse" = "Assesses circulation"
+- "15L NRB" = "Administers oxygen"
+- "Blood glucose" = "Performs diagnostics"
+- "How are you feeling?" = "Checks mental status"
+- "Emergent transport" = "Determines transport decision"
 
-Your output should include:
+Return:
 1. Score out of 48
-2. What the student did correctly
-3. What they missed
-4. 2–3 personalized improvement tips
-5. Any reasons for a critical failure
+2. List what they did correctly
+3. List what they missed
+4. 2–3 improvement tips
+5. Any critical failure explanation
 
-Be objective and supportive. Use bullet points where helpful. Format clearly.`
+Use clear bullet points. Be realistic and supportive.`
             },
             {
               role: "user",
-              content: `Here is the student's full transcript:\n\n${transcript}`
+              content: `Transcript of user actions:\n\n${transcript}`
             }
           ]
         })
@@ -66,7 +63,7 @@ Be objective and supportive. Use bullet points where helpful. Format clearly.`
       };
     }
 
-    // ✅ TRIAGE (GPT-3.5 Proctor or escalation)
+    // ✅ GPT-3.5 handles Proctor logic
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -78,13 +75,13 @@ Be objective and supportive. Use bullet points where helpful. Format clearly.`
         messages: [
           {
             role: "system",
-            content: `You are the NREMT Proctor for an EMS simulation.
+            content: `You are an NREMT Proctor in an EMS simulation.
 
-- Only respond to questions a real test proctor would.
-- If the user checks vitals or scene safety, provide realistic values.
+- Respond only as a real test evaluator would.
+- Provide vitals, scene safety info, patient count, AVPU, etc.
 - NEVER ask the user questions.
-- NEVER explain or coach unless asked directly.
-- If the user is talking to the patient or asking for feedback, reply ONLY with: ESCALATE.`
+- NEVER guide unless asked directly.
+- If the user talks to the patient or requests feedback, reply only with: ESCALATE.`
           },
           {
             role: "user",
@@ -97,8 +94,8 @@ Be objective and supportive. Use bullet points where helpful. Format clearly.`
     const triageData = await triage.json();
     const triageOutput = triageData?.choices?.[0]?.message?.content?.trim();
 
-    // 🔁 GPT-4 for patient simulation
     if (triageOutput === "ESCALATE") {
+      // 🔁 GPT-4: Patient dialogue
       const gpt4 = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
@@ -110,11 +107,12 @@ Be objective and supportive. Use bullet points where helpful. Format clearly.`
           messages: [
             {
               role: "system",
-              content: `You are simulating a realistic EMS patient during a medical call.
+              content: `You are a realistic EMS patient in a medical simulation.
 
-- Respond emotionally, realistically, and only when spoken to.
-- Reflect your condition worsening if delayed care occurs.
-- Do not guide, hint, or help unless specifically asked.`
+- Respond with emotion and clarity based on condition.
+- Do NOT guide or help the EMT.
+- If treatment is delayed or skipped, worsen appropriately.
+- Respond only when spoken to.`
             },
             {
               role: "user",
@@ -129,11 +127,11 @@ Be objective and supportive. Use bullet points where helpful. Format clearly.`
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 did not respond properly." })
+        body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 patient response failed." })
       };
     }
 
-    // ✅ GPT-3.5 handled it
+    // ✅ GPT-3.5 Proctor handled it
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
