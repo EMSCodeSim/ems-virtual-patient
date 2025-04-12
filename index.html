@@ -120,10 +120,14 @@
     </div>
   </div>
 
+  <!-- Load chatbot logic -->
+  <script src="chat_logic.js"></script>
+
   <script>
     let totalTime = 15 * 60;
     let countdown;
     let scenarioActive = false;
+    let prebuiltResponses = {};
 
     function startTimer() {
       const timer = document.getElementById('start-button');
@@ -147,6 +151,25 @@
       scenarioActive = false;
     }
 
+    function startRandomScenario() {
+      const scenarios = [
+        "You are dispatched to a 45-year-old male with chest pain.",
+        "You are dispatched to a 70-year-old female in respiratory distress.",
+        "You are dispatched to a 15-year-old male with trauma from a fall.",
+        "You are dispatched to a 60-year-old diabetic patient with altered mental status.",
+        "You are dispatched to a 25-year-old female who fainted at work."
+      ];
+      const i = Math.floor(Math.random() * scenarios.length);
+      const chat = document.getElementById('chat-display');
+      chat.innerHTML = '';
+      const dispatch = document.createElement('div');
+      dispatch.className = 'chat-message';
+      dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
+      chat.appendChild(dispatch);
+      totalTime = 15 * 60;
+      startTimer();
+    }
+
     async function sendMessage(messageOverride = null) {
       const input = document.getElementById('user-input');
       const message = messageOverride || input.value.trim();
@@ -165,27 +188,12 @@
 
       input.value = '';
 
-      try {
-        const response = await fetch('/.netlify/functions/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
-
-        const data = await response.json();
-        const botReply = data?.reply || '⚠️ No response received from patient.';
-
-        const botMsg = document.createElement('div');
-        botMsg.className = 'chat-message';
-        botMsg.textContent = botReply;
-        chat.appendChild(botMsg);
-        chat.scrollTop = chat.scrollHeight;
-      } catch {
-        const errMsg = document.createElement('div');
-        errMsg.className = 'chat-message';
-        errMsg.textContent = 'Error communicating with AI.';
-        chat.appendChild(errMsg);
-      }
+      const botReply = handleUserMessage(message, prebuiltResponses) || '⚠️ No response available.';
+      const botMsg = document.createElement('div');
+      botMsg.className = 'chat-message';
+      botMsg.textContent = botReply;
+      chat.appendChild(botMsg);
+      chat.scrollTop = chat.scrollHeight;
     }
 
     function endScenario() {
@@ -215,24 +223,15 @@
       recognition.start();
     }
 
-    function startRandomScenario() {
-      const scenarios = [
-        "You are dispatched to a 45-year-old male with chest pain.",
-        "You are dispatched to a 70-year-old female in respiratory distress.",
-        "You are dispatched to a 15-year-old male with trauma from a fall.",
-        "You are dispatched to a 60-year-old diabetic patient with altered mental status.",
-        "You are dispatched to a 25-year-old female who fainted at work."
-      ];
-      const i = Math.floor(Math.random() * scenarios.length);
-      const chat = document.getElementById('chat-display');
-      chat.innerHTML = '';
-      const dispatch = document.createElement('div');
-      dispatch.className = 'chat-message';
-      dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
-      chat.appendChild(dispatch);
-      totalTime = 15 * 60;
-      startTimer();
-    }
+    // Load prebuilt responses
+    fetch('prebuilt_responses.json')
+      .then(response => response.json())
+      .then(data => {
+        prebuiltResponses = data;
+      })
+      .catch(err => {
+        console.error("Error loading prebuilt responses:", err);
+      });
   </script>
 </body>
 </html>
