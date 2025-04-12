@@ -84,6 +84,9 @@
     #mic-button {
       background-color: #2196F3;
     }
+    #mic-button.active {
+      background-color: #0d47a1;
+    }
     #end-button {
       background-color: #f44336;
     }
@@ -198,6 +201,9 @@
     }
 
     function startVoiceInput() {
+      const micBtn = document.getElementById('mic-button');
+      micBtn.classList.add('active');
+
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
       recognition.interimResults = false;
@@ -206,16 +212,22 @@
       recognition.onresult = function(event) {
         const speechResult = event.results[0][0].transcript;
         sendMessage(speechResult);
+        micBtn.classList.remove('active');
       };
 
       recognition.onerror = function(event) {
         alert('Mic error: ' + event.error);
+        micBtn.classList.remove('active');
+      };
+
+      recognition.onend = function() {
+        micBtn.classList.remove('active');
       };
 
       recognition.start();
     }
 
-    function startRandomScenario() {
+    async function startRandomScenario() {
       const scenarios = [
         "You are dispatched to a 45-year-old male with chest pain.",
         "You are dispatched to a 70-year-old female in respiratory distress.",
@@ -232,6 +244,13 @@
       chat.appendChild(dispatch);
       totalTime = 15 * 60;
       startTimer();
+
+      // Reset memory on new scenario
+      await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `📟 Dispatch: ${scenarios[i]}`, reset: true })
+      });
     }
   </script>
 </body>
