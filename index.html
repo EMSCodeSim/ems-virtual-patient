@@ -124,6 +124,7 @@
     let totalTime = 15 * 60;
     let countdown;
     let scenarioActive = false;
+    let userTranscript = [];
 
     function startTimer() {
       const timer = document.getElementById('start-button');
@@ -136,6 +137,7 @@
           clearInterval(countdown);
           timer.textContent = '⏰ Time is up!';
           scenarioActive = false;
+          endScenario(); // auto end
         }
         totalTime--;
       }, 1000);
@@ -163,6 +165,7 @@
       dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
       chat.appendChild(dispatch);
       totalTime = 15 * 60;
+      userTranscript = []; // reset transcript
       startTimer();
     }
 
@@ -178,9 +181,7 @@
       chat.appendChild(userMsg);
       chat.scrollTop = chat.scrollHeight;
 
-      if (scenarioActive && /transport(ed)? by ambulance/i.test(message)) {
-        stopTimer();
-      }
+      userTranscript.push("User: " + message);
 
       input.value = '';
 
@@ -200,7 +201,6 @@
         chat.appendChild(botMsg);
         chat.scrollTop = chat.scrollHeight;
 
-        console.log("GPT Response:", botReply);
       } catch (err) {
         console.error(err);
         const errMsg = document.createElement('div');
@@ -217,6 +217,27 @@
       endMsg.className = 'chat-message';
       endMsg.textContent = '🚑 Scenario ended. Preparing summary and feedback...';
       chat.appendChild(endMsg);
+
+      const transcript = userTranscript.join("\n");
+      sendFinalReport(transcript);
+    }
+
+    async function sendFinalReport(transcript) {
+      try {
+        const response = await fetch('/.netlify/functions/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: `[END SCENARIO]\n${transcript}` })
+        });
+
+        const data = await response.json();
+        const reportMsg = document.createElement('div');
+        reportMsg.className = 'chat-message';
+        reportMsg.textContent = data?.reply || '⚠️ No final report received.';
+        document.getElementById('chat-display').appendChild(reportMsg);
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     function startVoiceInput() {
