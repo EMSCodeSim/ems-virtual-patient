@@ -9,9 +9,9 @@ exports.handler = async function (event, context) {
     const { message } = JSON.parse(event.body);
     const apiKey = process.env.OPENAI_API_KEY;
 
-    // Check if it's a final report message
     const isEndScenario = message.startsWith("[END SCENARIO]");
 
+    // ✅ FINAL SCORING SECTION
     if (isEndScenario) {
       const transcript = message.replace("[END SCENARIO]", "").trim();
 
@@ -26,33 +26,38 @@ exports.handler = async function (event, context) {
           messages: [
             {
               role: "system",
-              content: `You are a strict but helpful NREMT Proctor.
+              content: `You are a certified NREMT evaluator scoring an EMT-Basic student's medical patient assessment scenario using the official NREMT Medical Assessment Skill Sheet (48 total points).
 
-Your job is to evaluate a student's medical patient assessment scenario for their EMT-Basic test. Use the NREMT Medical Assessment Skill Sheet (48 points total). Look for:
+Your task:
+- Read the transcript of the student's performance.
+- Translate common EMS/EMT slang into proper skill sheet actions:
+  - "BSI" = "Takes PPE precautions"
+  - "Scene safe" = "Determines scene safety"
+  - "I check pulse" = "Assesses circulation"
+  - "Rate your pain" = "Assesses severity"
+  - "15L NRB" = "Administers oxygen"
+  - "Any allergies?" = "Asks about allergies"
+  - "Can you tell me your name?" = "Checks AVPU"
+  - "We’re going emergent" = "Determines transport decision"
 
-- PPE, scene safety, MOI/NOI, AVPU, ABCs
-- OPQRST, SAMPLE, vitals, interventions
-- Reassessment, field impression, and transport decision
+Your output should include:
+1. Score out of 48
+2. What the student did correctly
+3. What they missed
+4. 2–3 personalized improvement tips
+5. Any reasons for a critical failure
 
-Return:
-1. A score out of 48
-2. What was done correctly
-3. What was missed
-4. 2–3 personalized tips
-5. Any critical failures and explanation
-
-Be realistic and structured.`
+Be objective and supportive. Use bullet points where helpful. Format clearly.`
             },
             {
               role: "user",
-              content: `Here is the full transcript of user actions:\n\n${transcript}`
+              content: `Here is the student's full transcript:\n\n${transcript}`
             }
           ]
         })
       });
 
       const gpt4Data = await gpt4Response.json();
-
       const gpt4Output = gpt4Data?.choices?.[0]?.message?.content?.trim();
 
       return {
@@ -61,7 +66,7 @@ Be realistic and structured.`
       };
     }
 
-    // Default: GPT-3.5 triage and proctor handling
+    // ✅ TRIAGE (GPT-3.5 Proctor or escalation)
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -75,11 +80,11 @@ Be realistic and structured.`
             role: "system",
             content: `You are the NREMT Proctor for an EMS simulation.
 
-Respond only with clinical information:
-- Vitals, scene safety, number of patients, AVPU, etc.
+- Only respond to questions a real test proctor would.
+- If the user checks vitals or scene safety, provide realistic values.
 - NEVER ask the user questions.
-- NEVER give advice or coaching unless asked.
-- If the user is talking to the patient or asking for feedback, respond only with: ESCALATE.`
+- NEVER explain or coach unless asked directly.
+- If the user is talking to the patient or asking for feedback, reply ONLY with: ESCALATE.`
           },
           {
             role: "user",
@@ -92,6 +97,7 @@ Respond only with clinical information:
     const triageData = await triage.json();
     const triageOutput = triageData?.choices?.[0]?.message?.content?.trim();
 
+    // 🔁 GPT-4 for patient simulation
     if (triageOutput === "ESCALATE") {
       const gpt4 = await fetch(OPENAI_API_URL, {
         method: "POST",
@@ -104,9 +110,11 @@ Respond only with clinical information:
           messages: [
             {
               role: "system",
-              content: `You are roleplaying as a realistic EMS patient.
+              content: `You are simulating a realistic EMS patient during a medical call.
 
-Only respond when directly spoken to. Act emotional, distressed, or confused as appropriate. Do not help the user. If care is delayed or skipped, worsen your symptoms.`
+- Respond emotionally, realistically, and only when spoken to.
+- Reflect your condition worsening if delayed care occurs.
+- Do not guide, hint, or help unless specifically asked.`
             },
             {
               role: "user",
@@ -125,6 +133,7 @@ Only respond when directly spoken to. Act emotional, distressed, or confused as 
       };
     }
 
+    // ✅ GPT-3.5 handled it
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
