@@ -1,0 +1,27 @@
+
+{
+  "respiratory distress": {
+    "questions": [
+      "Are you having trouble breathing?",
+      "Can you describe your breathing difficulty?",
+      "Do you have any history of asthma, COPD, or allergies?"
+    ],
+    "actions": [
+      "Place the patient on 15L O2 via NRB.",
+      "Assist with prescribed inhaler if patient is able.",
+      "Request ALS for further airway management."
+    ]
+  },
+  "chest pain": {
+    "questions": [
+      "Can you describe the pain?",
+      "Does the pain radiate anywhere?",
+      "Do you have a history of heart problems?"
+    ],
+    "actions": [
+      "Administer 324mg aspirin.",
+      "Apply 15L O2 via NRB if SpO2 < 94%.",
+      "Consider nitroglycerin if BP > 100 systolic."
+    ]
+  }
+}
