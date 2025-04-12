@@ -8,10 +8,9 @@ exports.handler = async function (event, context) {
   try {
     const { message } = JSON.parse(event.body);
     const apiKey = process.env.OPENAI_API_KEY;
-
     const lowerMsg = message.toLowerCase();
 
-    // Step 1: Send to GPT-3.5 (Proctor + Triage)
+    // Step 1: Send to GPT-3.5 for triage/proctor logic
     const triage = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -24,11 +23,25 @@ exports.handler = async function (event, context) {
           {
             role: "system",
             content: `You are the NREMT Proctor for an EMS simulation. 
-Respond ONLY as the Proctor.
-- Provide vitals if asked (e.g., BP, HR, skin).
-- Give scene details like safety, number of patients.
-- Do NOT help unless asked directly.
-- If the message is directed at the patient or asks for feedback, reply with just: ESCALATE.`
+Your role is to act like a real NREMT test evaluator—not a chatbot.
+
+Strict rules:
+- Only answer when asked.
+- If the user checks vitals (e.g., "check pulse", "check BP"), give realistic values.
+- NEVER ask the user questions.
+- NEVER return questions as responses.
+- NEVER guide or explain unless explicitly asked.
+- If the user is speaking to the patient or asking for feedback, reply ONLY with: ESCALATE.
+
+Examples:
+User: I check the patient’s pulse  
+You: The pulse is 110, regular and strong.
+
+User: Is the scene safe?  
+You: Yes, the scene is safe.
+
+User: What is your name?  
+You: ESCALATE`
           },
           {
             role: "user",
@@ -42,7 +55,7 @@ Respond ONLY as the Proctor.
     const triageOutput = triageData.choices?.[0]?.message?.content?.trim();
 
     if (triageOutput === "ESCALATE") {
-      // Step 2: Send to GPT-4 Turbo for patient or feedback logic
+      // Step 2: Send to GPT-4 Turbo for patient or scenario scoring
       const gpt4 = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
@@ -54,17 +67,18 @@ Respond ONLY as the Proctor.
           messages: [
             {
               role: "system",
-              content: `You are simulating a realistic EMS patient or providing scenario scoring.
-If the message is a question to the patient:
-- Answer realistically based on your condition.
-- Do NOT guide or help unless directly asked.
-- React emotionally and physically appropriate to the condition.
+              content: `You are simulating a realistic EMS patient or giving NREMT scenario feedback.
+
+If the user is asking the patient:
+- Respond only if directly addressed.
+- Be realistic: emotional, confused, or sick as appropriate.
+- Do NOT help the user or give hints.
 
 If the user is asking for feedback:
-- Score the scenario out of 48 points.
-- Mention what they did correctly and missed.
-- Provide 2-3 improvement tips.
-- Mention any critical failures if present.`
+- Score them based on the NREMT medical checklist (48 points).
+- Mention what they did right and what they missed.
+- Give 2-3 specific improvement tips.
+- Note any critical failures if applicable.`
             },
             {
               role: "user",
@@ -83,7 +97,7 @@ If the user is asking for feedback:
       };
     }
 
-    // Default: GPT-3.5 Proctor response
+    // Default response from GPT-3.5 (Proctor)
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
