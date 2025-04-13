@@ -12,16 +12,19 @@
       font-family: Arial, sans-serif;
       background-color: #eaeaea;
     }
+
     body {
       display: flex;
       flex-direction: column;
     }
+
     header {
       background: #1e1e1e;
       color: white;
       text-align: center;
       padding: 10px;
     }
+
     #chat-display {
       flex: 1;
       overflow-y: auto;
@@ -30,6 +33,7 @@
       display: flex;
       flex-direction: column;
     }
+
     .chat-message {
       background: white;
       margin-bottom: 10px;
@@ -38,20 +42,24 @@
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
       max-width: 95%;
     }
+
     .chat-message img {
       width: 100%;
       max-height: 300px;
       object-fit: contain;
       border-radius: 8px;
     }
+
     #chat-input {
       background-color: #ddd;
       padding: 10px;
       box-sizing: border-box;
     }
+
     #input-row {
       display: flex;
     }
+
     #user-input {
       flex: 1;
       padding: 10px;
@@ -61,6 +69,7 @@
       resize: none;
       height: 60px;
     }
+
     #send-button {
       margin-left: 10px;
       padding: 14px 24px;
@@ -71,11 +80,13 @@
       border-radius: 5px;
       cursor: pointer;
     }
+
     #button-row {
       margin-top: 10px;
       display: flex;
       gap: 10px;
     }
+
     #mic-button, #end-button {
       font-size: 18px;
       padding: 16px 20px;
@@ -86,12 +97,15 @@
       border-radius: 5px;
       cursor: pointer;
     }
+
     #mic-button {
       background-color: #2196F3;
     }
+
     #end-button {
       background-color: #f44336;
     }
+
     #start-button {
       padding: 20px 40px;
       font-size: 24px;
@@ -155,7 +169,6 @@
         document.getElementById('chat-display').innerHTML = '';
         addChatMessage(`📟 Dispatch: ${dispatchText}`);
 
-        // ✅ SAFE: Only show scene photo if defined
         if (metadata?.media?.scene) {
           addChatImage(`${basePath}/${metadata.media.scene}`, "Scene Photo");
         }
@@ -172,7 +185,7 @@
 
       } catch (err) {
         console.error("Error loading scenario:", err);
-        alert("Failed to load scenario. Please check your files.");
+        alert("Failed to load scenario.");
       }
     }
 
@@ -222,8 +235,12 @@
         const reply = data?.reply || '⚠️ No response received from patient.';
         addChatMessage(reply);
 
-        // ✅ Show patient_1.jpg on first patient response
-        if (!hasPatient1Shown && reply !== '⚠️ No response received from patient.') {
+        const patientLike = /(?:\bmy\b|\bI am\b|chest|pain|scared|hard to breathe|feel|hurts)/i;
+        if (
+          !hasPatient1Shown &&
+          reply !== '⚠️ No response received from patient.' &&
+          patientLike.test(reply)
+        ) {
           if (window.currentScenario?.basePath) {
             addChatImage(`${window.currentScenario.basePath}/patient_1.jpg`, "Patient contact made");
             hasPatient1Shown = true;
