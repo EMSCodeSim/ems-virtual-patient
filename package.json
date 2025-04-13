@@ -1,7 +1,16 @@
 {
-  "name": "ems-virtual-patient",
+  "name": "ems-code-sim",
   "version": "1.0.0",
+  "description": "EMS Virtual Patient Simulation with GPT and Netlify Functions",
+  "main": "index.js",
+  "scripts": {
+    "start": "netlify dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "node-fetch": "^2.6.7"
-  }
+    "node-fetch": "^3.3.2"
+  },
+  "type": "module"
 }
