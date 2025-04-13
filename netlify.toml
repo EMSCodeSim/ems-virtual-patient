@@ -1,7 +1,6 @@
-/ems-virtural-patient/
-├── netlify.toml               ✅ publish = "public"
-├── public/                    ✅ contains index.html
-│   └── index.html
-├── netlify/
-│   └── functions/
-│       └── handleChat.js      ✅ backend function
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
