@@ -1,0 +1,15 @@
+{
+  "title": "Chest Pain \u2013 45-Year-Old Male",
+  "media": {
+    "scene": "scene.jpg",
+    "patient_images": [
+      "patient_1.jpg",
+      "patient_2.jpg"
+    ],
+    "ekg": "ekg_strip.png",
+    "breath_sounds": "breath_sound.mp3",
+    "background_audio": "ambient_noise.mp3"
+  },
+  "vitals": "vitals.json",
+  "ai_prompt": "Patient is experiencing substernal chest pain, onset 20 minutes ago while washing dishes. Pale and anxious."
+}
