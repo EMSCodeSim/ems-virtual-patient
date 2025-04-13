@@ -39,6 +39,8 @@
 
     .chat-message img {
       width: 100%;
+      max-height: 300px;
+      object-fit: contain;
       border-radius: 8px;
     }
 
@@ -115,7 +117,7 @@
   </header>
 
   <div style="text-align: center;">
-    <button id="start-button" onclick="startScenario()">Start Scenario</button>
+    <button id="start-button" onclick="startScenario()">🚑 Start Simulation</button>
   </div>
 
   <div id="chat-display"></div>
@@ -134,6 +136,8 @@
   <script>
     let userTranscript = [];
     let scenarioActive = false;
+    let totalTime = 15 * 60;
+    let countdown;
 
     async function loadScenarioData(scenarioName) {
       const basePath = `/scenarios/${scenarioName}`;
@@ -160,6 +164,7 @@
         };
 
         scenarioActive = true;
+        startTimer();
 
       } catch (err) {
         console.error("Error loading scenario:", err);
@@ -167,9 +172,29 @@
       }
     }
 
+    function startTimer() {
+      const timerBtn = document.getElementById('start-button');
+      timerBtn.disabled = true;
+
+      countdown = setInterval(() => {
+        const mins = Math.floor(totalTime / 60);
+        const secs = totalTime % 60;
+        timerBtn.textContent = '🕒 ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        totalTime--;
+
+        if (totalTime < 0) {
+          clearInterval(countdown);
+          timerBtn.textContent = '⏰ Time is up!';
+          scenarioActive = false;
+          endScenario();
+        }
+      }, 1000);
+    }
+
     function startScenario() {
       loadScenarioData("chest_pain_01");
       userTranscript = [];
+      totalTime = 15 * 60;
     }
 
     async function sendMessage(messageOverride = null) {
@@ -220,6 +245,9 @@
 
     function endScenario() {
       scenarioActive = false;
+      clearInterval(countdown);
+      document.getElementById('start-button').textContent = '⏹ Scenario Ended';
+
       addChatMessage('🚑 Scenario ended. Preparing summary and feedback...');
       const transcript = userTranscript.join("\n");
 
