@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const scoringTriggers = {
   "checked_airway": /airway|open.*airway/i,
@@ -14,45 +14,54 @@ const expectedActions = [
   "called_als"
 ];
 
-exports.handler = async function(event, context) {
-  const { message, history = [] } = JSON.parse(event.body);
+export async function handler(event) {
+  try {
+    const { message, history = [] } = JSON.parse(event.body);
 
-  const systemPrompt = "You are simulating a 55-year-old male experiencing chest pain at home. Only provide information when the EMT asks. Respond only as the patient.";
+    // Score current message
+    let userScore = {};
+    Object.entries(scoringTriggers).forEach(([key, regex]) => {
+      if (regex.test(message)) {
+        userScore[key] = true;
+      }
+    });
 
-  let userScore = {};
-  Object.entries(scoringTriggers).forEach(([key, regex]) => {
-    if (regex.test(message)) {
-      userScore[key] = true;
-    }
-  });
+    const systemPrompt = `
+You are simulating a 55-year-old male experiencing chest pain at home. 
+Only provide information when the EMT asks. Do not volunteer full history. 
+Respond only as the patient unless the user asks for information only the proctor would know.
+    `;
 
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history,
-    { role: "user", content: message }
-  ];
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history,
+      { role: "user", content: message }
+    ];
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-4-turbo",
-      messages
-    })
-  });
+    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4-turbo",
+        messages
+      })
+    });
 
-  const data = await response.json();
-  const reply = data.choices[0].message.content;
+    const data = await openaiResponse.json();
+    const reply = data.choices?.[0]?.message?.content || "⚠️ AI response unavailable.";
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      reply,
-      updatedHistory: [...history, { role: "user", content: message }, { role: "assistant", content: reply }],
-      userScore
-    })
-  };
-};
+    const updatedHistory = [...history, { role: "user", content: message }, { role: "assistant", content: reply }];
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        reply,
+        updatedHistory,
+        userScore
+      })
+    };
+  } catch (err) {
+    console.error
