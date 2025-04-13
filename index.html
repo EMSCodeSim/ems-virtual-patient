@@ -145,20 +145,25 @@
     let scenarioActive = false;
     let totalTime = 15 * 60;
     let countdown;
+    let mediaTriggers = [];
 
     async function loadScenarioData(scenarioName) {
       const basePath = `/scenarios/${scenarioName}`;
 
       try {
-        const [dispatchRes, metadataRes, vitalsRes] = await Promise.all([
+        const [dispatchRes, metadataRes, vitalsRes, triggersRes] = await Promise.all([
           fetch(`${basePath}/dispatch.txt`),
           fetch(`${basePath}/metadata.json`),
-          fetch(`${basePath}/vitals.json`)
+          fetch(`${basePath}/vitals.json`),
+          fetch(`${basePath}/media_triggers.json`)
         ]);
 
         const dispatchText = await dispatchRes.text();
         const metadata = await metadataRes.json();
         const vitals = await vitalsRes.json();
+        const triggerData = await triggersRes.json();
+
+        mediaTriggers = triggerData.triggers || [];
 
         document.getElementById('chat-display').innerHTML = '';
         addChatMessage(`📟 Dispatch: ${dispatchText}`);
@@ -210,6 +215,7 @@
       if (!message) return;
 
       addChatMessage(message);
+      checkMediaTriggers(message);
       userTranscript.push("User: " + message);
       input.value = '';
 
@@ -248,6 +254,22 @@
       wrapper.appendChild(img);
       chat.appendChild(wrapper);
       chat.scrollTop = chat.scrollHeight;
+    }
+
+    function checkMediaTriggers(message) {
+      if (!mediaTriggers.length || !window.currentScenario) return;
+
+      mediaTriggers.forEach(trigger => {
+        if (message.toLowerCase().includes(trigger.onPhrase.toLowerCase())) {
+          const filePath = `${window.currentScenario.basePath}/${trigger.file}`;
+          if (trigger.type === "image") {
+            addChatImage(filePath, trigger.file);
+          } else if (trigger.type === "audio") {
+            const audio = new Audio(filePath);
+            audio.play();
+          }
+        }
+      });
     }
 
     function endScenario() {
@@ -289,13 +311,13 @@
       recognition.start();
     }
 
-    // ⌨️ Allow "Enter" to send message
+    // ⌨️ Enable "Enter" to send message
     document.addEventListener("DOMContentLoaded", () => {
       const input = document.getElementById("user-input");
       input.addEventListener("keypress", function (event) {
         if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();  // prevent new line
-          sendMessage();           // trigger send
+          event.preventDefault();
+          sendMessage();
         }
       });
     });
