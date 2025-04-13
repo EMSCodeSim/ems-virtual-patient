@@ -11,6 +11,7 @@ exports.handler = async function (event, context) {
 
     const isEndScenario = message.startsWith("[END SCENARIO]");
 
+    // ✅ FINAL REPORT SCORING
     if (isEndScenario) {
       const transcript = message.replace("[END SCENARIO]", "").trim();
 
@@ -66,8 +67,8 @@ Use only what’s in the transcript. Do not invent details.`
       };
     }
 
-    // TRIAGE LOGIC - GPT-3.5 (Proctor)
-    const triage = await fetch(OPENAI_API_URL, {
+    // ✅ TRIAGE USING GPT-3.5
+    const triageRes = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,13 +81,17 @@ Use only what’s in the transcript. Do not invent details.`
             role: "system",
             content: `You are an NREMT Proctor for an EMT simulation.
 
-Only respond to proctor-type questions:
-- Vitals
+Only respond if the message is a proctor-type question, such as:
 - Scene safety
-- AVPU
 - Number of patients
-- If unsure, reply with: ESCALATE
-- Never ask the user questions.`
+- AVPU
+- Initial vitals
+- Breath sounds or skin color
+- Diagnostic results
+
+If the message is NOT a proctor-level fact request (e.g., "how are you feeling", "tell me about your pain"), reply with: ESCALATE
+
+NEVER ask the user questions.`
           },
           {
             role: "user",
@@ -96,10 +101,10 @@ Only respond to proctor-type questions:
       })
     });
 
-    const triageData = await triage.json();
+    const triageData = await triageRes.json();
     const triageOutput = triageData?.choices?.[0]?.message?.content?.trim();
 
-    // GPT-4 ESCALATION (Patient logic)
+    // 🔁 IF GPT-3.5 SAYS ESCALATE → USE GPT-4 FOR PATIENT ROLE
     if (triageOutput === "ESCALATE") {
       try {
         const gpt4 = await fetch(OPENAI_API_URL, {
@@ -113,12 +118,13 @@ Only respond to proctor-type questions:
             messages: [
               {
                 role: "system",
-                content: `You are simulating a realistic EMS patient.
+                content: `You are simulating a realistic EMS patient in a medical scenario.
 
-- Respond like a real patient would (anxious, scared, short of breath, etc.)
-- Only speak when spoken to
-- Do not coach the EMT
-- If symptoms worsen, express it based on the user's actions.`
+- Respond like a real patient (anxious, in pain, confused, etc.)
+- Do not guide or help the EMT
+- Only respond when spoken to
+- Describe your symptoms accurately based on your condition
+- Do NOT escalate or hand off the question — you're the patient`
               },
               {
                 role: "user",
@@ -129,37 +135,34 @@ Only respond to proctor-type questions:
         });
 
         const gpt4Data = await gpt4.json();
-        console.log("GPT-4 Patient Response:", JSON.stringify(gpt4Data, null, 2)); // Debug log
-
         const gpt4Output = gpt4Data?.choices?.[0]?.message?.content?.trim();
+        console.log("GPT-4 Response:", gpt4Output);
 
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            reply: gpt4Output || "⚠️ GPT-4 responded, but content was empty."
-          })
+          body: JSON.stringify({ reply: gpt4Output || "⚠️ GPT-4 responded, but no content received." })
         };
 
-      } catch (err) {
-        console.error("GPT-4 Error:", err);
+      } catch (error) {
+        console.error("GPT-4 escalation error:", error);
         return {
           statusCode: 500,
-          body: JSON.stringify({ reply: "⚠️ Error retrieving patient response from GPT-4." })
+          body: JSON.stringify({ reply: "⚠️ Error from GPT-4 while simulating patient." })
         };
       }
     }
 
-    // GPT-3.5 handled it
+    // ✅ TRIAGE WAS HANDLED BY GPT-3.5
     return {
       statusCode: 200,
       body: JSON.stringify({ reply: triageOutput })
     };
 
   } catch (err) {
-    console.error("Chat Handler Error:", err);
+    console.error("Chat function error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "⚠️ Internal server error." })
+      body: JSON.stringify({ reply: "⚠️ Server error processing message." })
     };
   }
 };
