@@ -1,6 +1,7 @@
-[build]
-  functions = "netlify/functions"
-  publish = "."
-
-[functions]
-  node_bundler = "esbuild"
+/your-project-root
+├── netlify.toml               ✅ publish = "public"
+├── public/                    ✅ contains index.html
+│   └── index.html
+├── netlify/
+│   └── functions/
+│       └── handleChat.js      ✅ backend function
