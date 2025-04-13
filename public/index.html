@@ -124,6 +124,7 @@
     let totalTime = 15 * 60;
     let countdown;
     let scenarioActive = false;
+    let history = [];
 
     function startTimer() {
       const timer = document.getElementById('start-button');
@@ -166,13 +167,15 @@
       input.value = '';
 
       try {
-        const response = await fetch('/.netlify/functions/chat', {
+        const response = await fetch('/.netlify/functions/handleChat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({ message, history })
         });
 
         const data = await response.json();
+        history = data.updatedHistory;
+
         const botReply = data?.reply || '⚠️ No response received from patient.';
 
         const botMsg = document.createElement('div');
@@ -180,12 +183,20 @@
         botMsg.textContent = botReply;
         chat.appendChild(botMsg);
         chat.scrollTop = chat.scrollHeight;
+
+        speakText(botReply);
       } catch {
         const errMsg = document.createElement('div');
         errMsg.className = 'chat-message';
         errMsg.textContent = 'Error communicating with AI.';
         chat.appendChild(errMsg);
       }
+    }
+
+    function speakText(text) {
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(text);
+      synth.speak(utter);
     }
 
     function endScenario() {
@@ -204,35 +215,3 @@
       recognition.maxAlternatives = 1;
 
       recognition.onresult = function(event) {
-        const speechResult = event.results[0][0].transcript;
-        sendMessage(speechResult);
-      };
-
-      recognition.onerror = function(event) {
-        alert('Mic error: ' + event.error);
-      };
-
-      recognition.start();
-    }
-
-    function startRandomScenario() {
-      const scenarios = [
-        "You are dispatched to a 45-year-old male with chest pain.",
-        "You are dispatched to a 70-year-old female in respiratory distress.",
-        "You are dispatched to a 15-year-old male with trauma from a fall.",
-        "You are dispatched to a 60-year-old diabetic patient with altered mental status.",
-        "You are dispatched to a 25-year-old female who fainted at work."
-      ];
-      const i = Math.floor(Math.random() * scenarios.length);
-      const chat = document.getElementById('chat-display');
-      chat.innerHTML = '';
-      const dispatch = document.createElement('div');
-      dispatch.className = 'chat-message';
-      dispatch.textContent = `📟 Dispatch: ${scenarios[i]}`;
-      chat.appendChild(dispatch);
-      totalTime = 15 * 60;
-      startTimer();
-    }
-  </script>
-</body>
-</html>
