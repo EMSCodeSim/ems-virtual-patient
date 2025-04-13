@@ -1,4 +1,4 @@
-/ems-virtural-patient
+/ems-virtural-patient/
 ├── netlify.toml               ✅ publish = "public"
 ├── public/                    ✅ contains index.html
 │   └── index.html
