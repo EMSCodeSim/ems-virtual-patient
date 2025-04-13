@@ -152,17 +152,19 @@
       const basePath = `/scenarios/${scenarioName}`;
 
       try {
-        const [dispatchRes, metadataRes, vitalsRes, triggersRes] = await Promise.all([
+        const [dispatchRes, metadataRes, vitalsRes, triggersRes, contextRes] = await Promise.all([
           fetch(`${basePath}/dispatch.txt`),
           fetch(`${basePath}/metadata.json`),
           fetch(`${basePath}/vitals.json`),
-          fetch(`${basePath}/media_triggers.json`)
+          fetch(`${basePath}/media_triggers.json`),
+          fetch(`${basePath}/gpt_context.txt`)
         ]);
 
         const dispatchText = await dispatchRes.text();
         const metadata = await metadataRes.json();
         const vitals = await vitalsRes.json();
         const triggerData = await triggersRes.json();
+        const context = await contextRes.text();
 
         mediaTriggers = triggerData.triggers || [];
 
@@ -176,6 +178,7 @@
         window.currentScenario = {
           metadata,
           vitals,
+          context: context.trim(),
           basePath
         };
 
@@ -216,8 +219,13 @@
 
     async function sendMessage(messageOverride = null) {
       const input = document.getElementById('user-input');
-      const message = messageOverride || input.value.trim();
+      let message = messageOverride || input.value.trim();
       if (!message) return;
+
+      // Inject context into first message
+      if (!userTranscript.length && window.currentScenario?.context) {
+        message = `${window.currentScenario.context}\n\n${message}`;
+      }
 
       addChatMessage(message);
       checkMediaTriggers(message);
