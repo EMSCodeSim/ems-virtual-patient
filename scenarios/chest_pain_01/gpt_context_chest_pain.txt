@@ -1,0 +1,38 @@
+Scene: You are dispatched to a private residence for a 55-year-old male experiencing chest pain. There is only one patient. The home is safe, quiet, and the patient is sitting on a couch in the living room.
+
+General Impression: The patient appears anxious and diaphoretic. Skin is pale, cool, and clammy. He is alert and oriented but clearly uncomfortable.
+
+Chief Complaint: Chest pain.
+
+OPQRST Assessment:
+- Onset: Sudden onset while watching TV 20 minutes ago
+- Provocation: Pain does not change with movement or breathing
+- Quality: Described as pressure-like and tight
+- Radiation: No radiation reported
+- Severity: 8 out of 10
+- Time: Started approximately 20 minutes ago and has remained constant
+
+Associated Symptoms: The patient states he is slightly nauseated, feels weak, and is short of breath.
+
+SAMPLE History:
+- Signs/Symptoms: Chest pressure, shortness of breath, weakness
+- Allergies: No known drug allergies
+- Medications: Lisinopril, Atorvastatin, Nitroglycerin (has taken before)
+- Past Medical History: Hypertension, high cholesterol
+- Last Oral Intake: Light breakfast around 7 AM
+- Events Leading Up: Was watching TV and began experiencing chest discomfort without exertion
+
+Vitals:
+- Blood Pressure: 148/92 mmHg
+- Heart Rate: 108 bpm, regular
+- Respiratory Rate: 22 breaths/min, slightly labored
+- SpO2: 96% on room air
+- AVPU: Alert
+
+Patient Condition: No trauma, no bleeding, no other patients. The patient is cooperative and can answer all questions clearly. Airway is patent, breathing is shallow but adequate. Peripheral pulses are weak but present. No visible injury.
+
+Response Notes:
+- The patient has nitroglycerin prescribed and is familiar with its use. 
+- The patient will respond to questions calmly, though somewhat anxious.
+- If oxygen is applied or aspirin administered, the patient should acknowledge it.
+- The patient does not need spinal precautions unless a fall or trauma is introduced later.
