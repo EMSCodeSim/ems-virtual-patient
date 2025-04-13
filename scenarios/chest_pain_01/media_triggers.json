@@ -6,11 +6,6 @@
       "file": "scene.jpg"
     },
     {
-      "onPhrase": "make patient contact",
-      "type": "image",
-      "file": "patient_1.jpg"
-    },
-    {
       "onPhrase": "transport started and oxygen applied",
       "type": "image",
       "file": "patient_2.jpg"
