@@ -18,7 +18,6 @@ export async function handler(event) {
   try {
     const { message, history = [] } = JSON.parse(event.body);
 
-    // Score current message
     let userScore = {};
     Object.entries(scoringTriggers).forEach(([key, regex]) => {
       if (regex.test(message)) {
@@ -27,10 +26,10 @@ export async function handler(event) {
     });
 
     const systemPrompt = `
-You are simulating a 55-year-old male experiencing chest pain at home. 
-Only provide information when the EMT asks. Do not volunteer full history. 
+You are simulating a 55-year-old male experiencing chest pain at home.
+Only provide information when the EMT asks. Do not volunteer full history.
 Respond only as the patient unless the user asks for information only the proctor would know.
-    `;
+`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -64,4 +63,10 @@ Respond only as the patient unless the user asks for information only the procto
       })
     };
   } catch (err) {
-    console.error
+    console.error("handleChat.js error:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ reply: "⚠️ Server error." })
+    };
+  }
+}
