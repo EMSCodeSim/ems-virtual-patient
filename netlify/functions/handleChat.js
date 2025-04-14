@@ -16,8 +16,10 @@ const expectedActions = [
 
 export async function handler(event) {
   try {
+    // Parse incoming request body
     const { message, history = [] } = JSON.parse(event.body);
 
+    // User scoring logic
     let userScore = {};
     Object.entries(scoringTriggers).forEach(([key, regex]) => {
       if (regex.test(message)) {
@@ -25,6 +27,7 @@ export async function handler(event) {
       }
     });
 
+    // System prompt for simulation
     const systemPrompt = `
 You are simulating a 55-year-old male experiencing chest pain at home.
 Only provide information when the EMT asks. Do not volunteer full history.
@@ -37,6 +40,12 @@ Respond only as the patient unless the user asks for information only the procto
       { role: "user", content: message }
     ];
 
+    // Check for missing OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("Missing OpenAI API key. Ensure OPENAI_API_KEY is set in your environment variables.");
+    }
+
+    // OpenAI API call
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -49,11 +58,20 @@ Respond only as the patient unless the user asks for information only the procto
       })
     });
 
+    // Handle potential errors from OpenAI API
+    if (!openaiResponse.ok) {
+      const errorDetails = await openaiResponse.text();
+      console.error("OpenAI API error:", errorDetails);
+      throw new Error(`OpenAI API returned an error: ${openaiResponse.status}`);
+    }
+
     const data = await openaiResponse.json();
     const reply = data.choices?.[0]?.message?.content || "⚠️ AI response unavailable.";
 
+    // Update message history
     const updatedHistory = [...history, { role: "user", content: message }, { role: "assistant", content: reply }];
 
+    // Return success response
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -63,10 +81,13 @@ Respond only as the patient unless the user asks for information only the procto
       })
     };
   } catch (err) {
+    // Log error to server console
     console.error("handleChat.js error:", err);
+
+    // Return error response to client
     return {
       statusCode: 500,
-      body: JSON.stringify({ reply: "⚠️ Server error." })
+      body: JSON.stringify({ reply: "⚠️ Server error. Please try again later." })
     };
   }
 }
